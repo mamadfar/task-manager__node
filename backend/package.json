@@ -20,9 +20,9 @@
   },
   "homepage": "https://github.com/mamadfar/express-task-manager__node#readme",
   "dependencies": {
-    "chalk": "^5.6.2",
     "dotenv": "^17.2.4",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "mysql2": "^3.20.0"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
