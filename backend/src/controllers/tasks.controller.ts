@@ -28,7 +28,7 @@ export default class TasksController {
       const start = (page - 1) * limit;
       const end = start + limit;
       const totalPages = Math.ceil(filteredTasks.length / limit);
-      const totalTasks = filteredTasks.length;
+      const totalFilteredTasks = filteredTasks.length;
       filteredTasks = filteredTasks.slice(start, end);
 
       res.json({
@@ -37,7 +37,10 @@ export default class TasksController {
           page,
           limit,
           totalPages,
-          totalTasks,
+          totalTasks: {
+            all: tasks.length,
+            filtered: totalFilteredTasks,
+          },
         },
         body: filteredTasks,
       });

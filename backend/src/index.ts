@@ -22,7 +22,7 @@ app.use((req, res, next) => {
   //! For preflight requests (OPTIONS), you can also specify allowed methods and headers
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE'); //? Allow specific HTTP methods
   //! By default Content-Type (application/json) is not allowed, so we need to allow it explicitly
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type'); //? Allow specific headers
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Cache-Control'); //? Allow specific headers, Allow Cache-Control header to prevent caching issues
   next();
 })
 

@@ -10,6 +10,7 @@ const pageLabel = document.getElementById("page-label");
 const pagination = document.getElementById("pagination");
 
 axios.defaults.baseURL = "http://localhost:3000/api/v1";
+axios.defaults.headers.get["Cache-Control"] = "no-cache";
 
 const limit = 3;
 let currentPage = 1;
@@ -27,7 +28,7 @@ const loadTasks = async () => {
     });
     if (data.success) {
         totalTasks = data.pagination.totalTasks;
-        totalPages = data.pagination.totalPages;
+        totalPages = Math.ceil(totalTasks.filtered / limit);
       if (data.body.length) {
         tasksList.classList.remove("d-none");
         message.classList.add("d-none");
@@ -61,7 +62,7 @@ const loadTasks = async () => {
         tasksList.classList.add("d-none");
         tasksList.innerHTML = "";
       }
-      if (totalTasks > limit) {
+      if (totalTasks.filtered > limit) {
         pagination.classList.remove("d-none");
         pageLabel.textContent = `Page ${currentPage} of ${totalPages}`;
         prevBtn.disabled = nextBtn.disabled = false;
@@ -131,10 +132,14 @@ taskForm.addEventListener("submit", async (event) => {
 
   try {
     const {data} = await axios.post("/tasks", { title, completed });
+    totalPages = Math.ceil(totalTasks.all / limit);
+    finished = undefined;
+    allStatusInput.checked = true;
+
     if (data.success) {
-      if (totalTasks === 0) {
+      if (totalTasks.all === 0) {
         currentPage = 1;
-      } else if (totalTasks % limit) {
+      } else if (totalTasks.all % limit) {
         currentPage = totalPages;
       } else {
         currentPage = totalPages + 1;
