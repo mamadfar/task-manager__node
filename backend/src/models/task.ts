@@ -1,105 +1,46 @@
 /* As a convention, it's better to import modules in this order: built-in, third-party, local */
-import util from 'util'
+import conn from '../db/index.js'
 
-import chalk from 'chalk'
-
-import DB from './db.js'
 import { ITask } from '../types/task.type.js';
 
+interface IGetTasksOptions {
+    page: number;
+    limit: number;
+    finished?: boolean;
+    search?: string;
+}
+
 export default class Task {
-    #id = 0;
-    #title = '';
-    #completed = false;
-
-    constructor(title: string, completed = false) {
-        this.#title = title;
-        this.#completed = completed;
-    }
-
-    get id() {
-        return this.#id;
-    }
-
-    get title() {
-        return this.#title;
-    }
-
-    get completed() {
-        return this.#completed;
-    }
-
-    set title(title: string) {
-        if (typeof title !== 'string' || title.length < 3) {
-            throw new Error('Title must be a string with at least 3 characters.');
+    static async getTasks({ page, limit, finished, search }: IGetTasksOptions) {
+        let conditions = `title like '%${search}%'`;
+        if (finished !== undefined) {
+            conditions += ` and completed = ${finished}`
         }
-        this.#title = title;
-    }
-    set completed(completed: boolean) {
-        if (typeof completed !== 'boolean') {
-            throw new Error('Completed must be a boolean value.');
-        }
-        this.#completed = completed;
-    }
 
-    [util.inspect.custom]() {
-        return `Task {
-    id: ${chalk.yellowBright(this.#id)}
-    title: ${chalk.green(`"${this.#title}"`)}
-    completed: ${chalk.blueBright(this.#completed)}
-}`
-    }
+        const start = (page - 1) * limit;
+        let query = `select * from tasks where ${conditions} limit ${start}, ${limit}`;
+        const [tasks] = await conn.query(query) as unknown as [ITask[], any];
 
-    save() {
-        try {
-            const id = DB.saveTask(this.#title, this.#completed, this.#id);
-            this.#id = id;
-        } catch (error) {
-            throw new Error((error as any).message);
-        }
-    }
+        query = `select count(*) as total from tasks
+                union all
+                select count(*) from tasks where ${conditions}`;
 
-    static getTaskById(id: number): Task | false {
-        const data = DB.getTaskById(id);
-        if (data) {
-            const task = new Task(data.title, data.completed);
-            task.#id = data.id;
-            return task;
-        } else {
-            return false;
-        }
-    }
+        let [totals] = await conn.query(query) as unknown as [ { total: number }[], any ];
 
-    static getTaskByTitle(title: string): Task | false {
-        const data = DB.getTaskByTitle(title);
-        if (data) {
-            const task = new Task(data.title, data.completed);
-            task.#id = data.id;
-            return task;
-        } else {
-            return false;
-        }
-    }
-
-    static getAllTasks(rawObject = false): ITask[] | Task[] {
-        const data = DB.getAllTasks();
-        if (rawObject) {
-            return data;
-        }
-        return data.map(task => {
-            const t = new Task(task.title, task.completed);
-            t.#id = task.id;
-            return t;
-        })
-    }
-
-    //? toJSON method is used when we want to convert the Task instance to a JSON object, for example when sending a response in an API.
-    //? By defining this method, we can control how the Task instance is represented in JSON format,
-    //? and we can exclude any private properties or methods that we don't want to expose in the API response.
-    toJSON() {
         return {
-            id: this.#id,
-            title: this.#title,
-            completed: this.#completed
+            tasks,
+            totalTasks: {
+                all: totals[0].total,
+                filtered: totals[1].total,
+            }
         }
+    }
+
+    static getTaskById(id: number) {
+        return true
+    }
+
+    static getTaskByTitle(title: string) {
+        return true
     }
 }
