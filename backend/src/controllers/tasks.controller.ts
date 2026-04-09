@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 
 import Task from "../models/task.js";
+import { Op } from "@sequelize/core";
 
 export default class TasksController {
   static async getTasks(req: Request, res: Response) {
@@ -14,19 +15,34 @@ export default class TasksController {
           : undefined;
     const search = req.query.search ? String(req.query.search) : "";
     try {
-      const result = await Task.getTasks({ page, limit, finished, search });
-
-      const totalPages = Math.ceil(result.totalTasks.filtered / limit);
+      const filters: any = {
+        title: {
+          [Op.like]: `%${search}%`,
+        },
+      };
+      if (finished !== undefined) {
+        filters.completed = finished;
+      }
+      const { rows, count } = await Task.findAndCountAll({
+        where: filters,
+        limit,
+        offset: (page - 1) * limit,
+      });
+      const allCount = await Task.count();
+      const totalPages = Math.ceil(count / limit);
 
       res.json({
         success: true,
+        body: rows,
         pagination: {
           page,
           limit,
           totalPages,
-          totalTasks: result.totalTasks,
+          totalTasks: {
+            all: allCount,
+            filtered: count,
+          },
         },
-        body: result.tasks,
       });
     } catch (error) {
       res.status(500).json({
@@ -39,7 +55,7 @@ export default class TasksController {
   static async getTaskById(req: Request, res: Response) {
     try {
       const id = Number(req.params.id);
-      const task = await Task.getTaskById(id);
+      const task = await Task.findByPk(id);
       if (task) {
         res.json({
           success: true,
@@ -65,24 +81,30 @@ export default class TasksController {
       const title = req.body.title;
       const completed = !!req.body.completed;
 
-      if (typeof title !== "string" || title.length < 3) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "Invalid Request: Title must be a string with at least 3 characters.",
-        });
-      } else if (await Task.getTaskByTitle(title)) {
-        return res.status(409).json({
-          success: false,
-          message:
-            "Invalid Request: A task with the same title already exists.",
-        });
-      }
+      //   if (typeof title !== "string" || title.length < 3) {
+      //     return res.status(400).json({
+      //       success: false,
+      //       message:
+      //         "Invalid Request: Title must be a string with at least 3 characters.",
+      //     });
+      //   } else if (await Task.getTaskByTitle(title)) {
+      //     return res.status(409).json({
+      //       success: false,
+      //       message:
+      //         "Invalid Request: A task with the same title already exists.",
+      //     });
+      //   }
 
       try {
-        const task = await Task.addTask(title, completed);
+        const task = await Task.create({ title, completed });
         res.status(201).json({ success: true, body: task });
       } catch (error) {
+        if ((error as any).errors?.length) {
+          res.status(500).json({
+            success: false,
+            message: (error as any).errors[0].message,
+          });
+        }
         res.status(500).json({
           success: false,
           message: "Internal Server Error",
@@ -100,28 +122,38 @@ export default class TasksController {
     if (req.body.title && req.body.completed !== undefined) {
       const { title, completed } = req.body;
 
-      if (title.length < 3) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid Request: Title must be at least 3 characters long.",
-        });
-      }
+      //   if (title.length < 3) {
+      //     return res.status(400).json({
+      //       success: false,
+      //       message: "Invalid Request: Title must be at least 3 characters long.",
+      //     });
+      //   }
 
-      let task = await Task.getTaskByTitle(title);
-      if (task && task.id !== Number(req.params.id)) {
-        return res.status(409).json({
-          success: false,
-          message:
-            "Invalid Request: A task with the same title already exists.",
-        });
-      }
+      //   let task = await Task.getTaskByTitle(title);
+      //   if (task && task.id !== Number(req.params.id)) {
+      //     return res.status(409).json({
+      //       success: false,
+      //       message:
+      //         "Invalid Request: A task with the same title already exists.",
+      //     });
+      //   }
 
-      task = await Task.getTaskById(Number(req.params.id));
+      const task = await Task.findByPk(Number(req.params.id));
       if (task) {
         try {
-          await Task.updateTask(task.id, title, completed);
+          // @ts-ignore
+          task.title = title;
+          // @ts-ignore
+          task.completed = Boolean(completed);
+          await task.save();
           res.json({ success: true, body: task });
         } catch (error) {
+          if ((error as any).errors?.length) {
+            res.status(500).json({
+              success: false,
+              message: (error as any).errors[0].message,
+            });
+          }
           res.status(500).json({
             success: false,
             message: "Internal Server Error",
@@ -144,7 +176,7 @@ export default class TasksController {
 
   static async deleteTask(req: Request, res: Response) {
     try {
-      if (await Task.deleteTask(Number(req.params.id))) {
+      if (await Task.destroy({ where: { id: Number(req.params.id) } })) {
         res.json({ success: true });
       } else {
         res.status(404).json({

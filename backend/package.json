@@ -1,25 +1,29 @@
 {
-  "name": "express-task-manager__node",
+  "name": "task-manager__node",
   "version": "1.0.0",
-  "description": "A task manager built with Node.js and Express",
+  "description": "A task manager built with Node.js, Express, Sequelize, MySQL and TypeScript.",
   "main": "dist/index.js",
   "scripts": {
     "start": "tsc && node dist/index.js",
-    "dev": "nodemon --watch src --ext ts --exec \"node --loader ts-node/esm src/index.ts\""
+    "dev": "nodemon --watch src --ext ts --exec \"node --loader ts-node/esm src/index.ts\"",
+    "db:seed:linux": "mysql -u $DB_USER -p $DB_PASS -h $DB_HOST -P $DB_PORT $DB_NAME < src/db/tasks.seed.sql",
+    "db:seed": "mysql -h %DB_HOST% -P %DB_PORT% -u %DB_USER% -p %DB_NAME% < src/db/tasks.seed.sql"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mamadfar/express-task-manager__node.git"
+    "url": "git+https://github.com/mamadfar/task-manager__node.git"
   },
   "keywords": [],
   "author": "Mohammad Farhadi",
   "license": "ISC",
   "type": "module",
   "bugs": {
-    "url": "https://github.com/mamadfar/express-task-manager__node/issues"
+    "url": "https://github.com/mamadfar/task-manager__node/issues"
   },
-  "homepage": "https://github.com/mamadfar/express-task-manager__node#readme",
+  "homepage": "https://github.com/mamadfar/task-manager__node#readme",
   "dependencies": {
+    "@sequelize/core": "^7.0.0-alpha.48",
+    "@sequelize/mysql": "^7.0.0-alpha.48",
     "dotenv": "^17.2.4",
     "express": "^5.2.1",
     "mysql2": "^3.20.0"

@@ -1,19 +1,14 @@
-import path from 'path'
-import {fileURLToPath} from 'url'
-
 import express from 'express'
 import 'dotenv/config'
 
-// import HomeRoute from './routes/home.route.js'
+import sequelize from './db/index.js'
+
 import TasksRoute from './routes/tasks.route.js'
 
-// const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const VERSION = process.env.VERSION || 'v1'
+const API_VERSION = process.env.API_VERSION || 'v1'
 
 const app = express()
 
-// app.use(express.static(path.join(__dirname, '..', 'public')))
-// app.use(express.urlencoded({extended: false})); //? to parse form data - usually used in HTML form submissions
 app.use(express.json()); //? to parse JSON data - usually used in API requests
 
 app.use((req, res, next) => {
@@ -27,24 +22,15 @@ app.use((req, res, next) => {
 })
 
 // app.use(HomeRoute)
-app.use(`/api/${VERSION}/`, TasksRoute)
+app.use(`/api/${API_VERSION}/`, TasksRoute)
 
 app.use('/', (req, res) => {
     res.status(404).send('<h1>404 Not Found</h1><br/><p>The requested resource was not found on this server.</p>')
 })
 
+//? Sync all defined models to the DB - this will create the tables if they don't exist (and do nothing if they already exist)
+await sequelize.sync();
+
 app.listen(process.env.PORT, () => {
   console.log(`Server is running on port ${process.env.PORT}`)
 })
-
-// export {__dirname as rootPath}
-
-
-
-//! Cycle dependeny issue: It means that two or more modules depend on each other, creating a circular reference.
-//! In this case, the index.ts file imports TaskController from task.controller.ts, and task.controller.ts imports rootPath from index.ts.
-//! This creates a cycle because both modules are trying to access each other's exports before they have been fully defined.
-//! To resolve this issue, you can either remove the import of rootPath from task.controller.ts if it's not necessary,
-//! or refactor your code to avoid the circular dependency.
-//? If we used rootPath in a middleware, we wouldn't get the error because middlewares are executed after all modules have been loaded,
-//? so the circular reference would not cause an issue at that point.

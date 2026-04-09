@@ -1,6 +1,6 @@
-/* As a convention, it's better to import modules in this order: built-in, third-party, local */
-import { DataTypes } from "@sequelize/core";
-import sequelize from "../db/index.js";
+// /* As a convention, it's better to import modules in this order: built-in, third-party, local */
+// import conn from "../db/index.js";
+// import type { RowDataPacket } from "mysql2/promise";
 
 // import { ITask } from "../types/task.type.js";
 
@@ -10,40 +10,6 @@ import sequelize from "../db/index.js";
 //   finished?: boolean;
 //   search?: string;
 // }
-
-const Task = sequelize.define('Task', {
-  title: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    unique: {
-      name: 'title_idx',
-      msg: 'A task with this title already exists.'
-    },
-    validate: {
-      isShort(value: string) {
-        if (value.length < 3) {
-          throw new Error('Title must be at least 3 characters long.');
-        }
-      },
-      isLong(value: string) {
-        if (value.length > 50) {
-          throw new Error('Title must be less than 50 characters long.');
-        }
-    }
-  },
-},
-  completed: {
-    type: DataTypes.BOOLEAN,
-    allowNull: false,
-    defaultValue: false,
-    index: 'completed_idx'
-  }
-}, {
-  timestamps: false,
-  paranoid: false,
-})
-
-export default Task;
 
 // export default class Task {
 //   static async getTasks({ page, limit, finished, search }: IGetTasksOptions) {
